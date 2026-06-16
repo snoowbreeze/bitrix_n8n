@@ -1,0 +1,36 @@
+{
+  "name": "n8n-nodes-bitrix24",
+  "version": "0.1.0",
+  "description": "Custom n8n node for Bitrix24 CRM via incoming webhook",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "build": "node scripts/build-apidocs-index.mjs && tsc && gulp build",
+    "build:index": "node scripts/build-apidocs-index.mjs",
+    "dev": "tsc --watch",
+    "lint": "eslint nodes credentials --ext .ts",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/Bitrix24WebhookApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Bitrix24/Bitrix24.node.js",
+      "dist/nodes/Bitrix24Universal/Bitrix24Universal.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "gulp": "^5.0.0",
+    "n8n-workflow": "^2.25.0",
+    "typescript": "^5.8.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": ">=2.0.0"
+  }
+}
