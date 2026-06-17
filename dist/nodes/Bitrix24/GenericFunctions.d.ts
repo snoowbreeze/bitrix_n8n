@@ -12,7 +12,7 @@ export declare function normalizeWebhookUrl(url: string): string;
 export declare function getEntityTypeId(resource: string, smartProcessEntityTypeId?: number): number;
 export declare function bitrixApiRequest(this: IExecuteFunctions | ILoadOptionsFunctions, method: string, body?: IDataObject): Promise<IDataObject>;
 export declare function formatFieldLabel(field: BitrixFieldMeta): string;
-export declare function parseFieldValue(rawValue: string, fieldType: string): unknown;
+export declare function parseFieldValue(rawValue: unknown, fieldType: string): unknown;
 export declare function buildFieldsObject(fieldValues: IDataObject[], fieldMetaMap: Map<string, BitrixFieldMeta>): IDataObject;
 export declare function fetchBitrixFields(context: ILoadOptionsFunctions | IExecuteFunctions, entityTypeId: number): Promise<BitrixFieldMeta[]>;
 export declare function fetchAvailableMethods(context: ILoadOptionsFunctions | IExecuteFunctions): Promise<string[]>;

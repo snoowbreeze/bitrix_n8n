@@ -37,7 +37,18 @@ async function fetchText(url) {
 }
 
 async function resolveRegistryUrl() {
-	const resourcesText = await fetchText(`${APIDOCS_BASE}/_search/ru/1781001004204-resources.js`);
+	const resourcesText = await fetchText(`${APIDOCS_BASE}/_search/ru/1781001004204-resources.js`).catch(
+		async () => {
+			// Путь к resources.js меняется при обновлении документации — ищем в HTML главной.
+			const html = await fetchText(`${APIDOCS_BASE}/api-reference/`);
+			const match = html.match(/_search\/ru\/[a-z0-9]+-resources\.js/);
+			if (!match) {
+				throw new Error('Не удалось найти resources.js в apidocs');
+			}
+			return fetchText(`${APIDOCS_BASE}/${match[0]}`);
+		},
+	);
+
 	const match = resourcesText.match(/"registry":"([^"]+)"/);
 	if (!match) {
 		throw new Error('Не удалось найти путь к registry в resources.js');
@@ -74,18 +85,30 @@ function buildIndex(registryText) {
 }
 
 async function main() {
-	console.log('Загрузка registry apidocs...');
-	const registryUrl = await resolveRegistryUrl();
-	console.log('Registry:', registryUrl);
-	const registryText = await fetchText(registryUrl);
-	const index = buildIndex(registryText);
+	const indexExists = await import('node:fs').then((fs) =>
+		fs.existsSync(outPath),
+	);
 
-	mkdirSync(dirname(outPath), { recursive: true });
-	writeFileSync(outPath, JSON.stringify(index, null, 2));
+	try {
+		console.log('Загрузка registry apidocs...');
+		const registryUrl = await resolveRegistryUrl();
+		console.log('Registry:', registryUrl);
+		const registryText = await fetchText(registryUrl);
+		const index = buildIndex(registryText);
 
-	console.log(`Индекс сохранён: ${outPath}`);
-	console.log(`Методов: ${Object.keys(index).length}`);
-	console.log('im.message.update ->', index['im.message.update']);
+		mkdirSync(dirname(outPath), { recursive: true });
+		writeFileSync(outPath, JSON.stringify(index, null, 2));
+
+		console.log(`Индекс сохранён: ${outPath}`);
+		console.log(`Методов: ${Object.keys(index).length}`);
+	} catch (error) {
+		if (indexExists) {
+			console.warn('Не удалось обновить индекс apidocs, используется существующий файл.');
+			console.warn(error instanceof Error ? error.message : error);
+			return;
+		}
+		throw error;
+	}
 }
 
 main().catch((error) => {

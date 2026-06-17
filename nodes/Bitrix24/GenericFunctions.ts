@@ -97,12 +97,26 @@ export function formatFieldLabel(field: BitrixFieldMeta): string {
 	return `${field.title} (${id})`;
 }
 
-export function parseFieldValue(rawValue: string, fieldType: string): unknown {
+export function parseFieldValue(rawValue: unknown, fieldType: string): unknown {
 	if (rawValue === '' || rawValue === undefined || rawValue === null) {
 		return rawValue;
 	}
 
-	const trimmed = rawValue.trim();
+	if (typeof rawValue === 'boolean') {
+		if (fieldType === 'boolean') return rawValue ? 'Y' : 'N';
+		return rawValue;
+	}
+
+	if (typeof rawValue === 'number') {
+		if (['integer', 'double', 'number'].includes(fieldType)) return rawValue;
+		return String(rawValue);
+	}
+
+	if (Array.isArray(rawValue) || (typeof rawValue === 'object' && rawValue !== null)) {
+		return rawValue;
+	}
+
+	const trimmed = String(rawValue).trim();
 
 	if (fieldType === 'boolean') {
 		const lower = trimmed.toLowerCase();
@@ -135,9 +149,10 @@ export function buildFieldsObject(
 
 	for (const entry of fieldValues) {
 		const fieldId = entry.fieldId as string;
-		const value = entry.value as string;
+		const value = entry.value as unknown;
 
-		if (!fieldId || value === undefined || value === '') continue;
+		if (fieldId === undefined || fieldId === '') continue;
+		if (value === undefined || value === null || value === '') continue;
 
 		const meta = fieldMetaMap.get(fieldId);
 		fields[fieldId] = (meta ? parseFieldValue(value, meta.type) : value) as IDataObject[string];

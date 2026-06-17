@@ -74,7 +74,20 @@ function parseFieldValue(rawValue, fieldType) {
     if (rawValue === '' || rawValue === undefined || rawValue === null) {
         return rawValue;
     }
-    const trimmed = rawValue.trim();
+    if (typeof rawValue === 'boolean') {
+        if (fieldType === 'boolean')
+            return rawValue ? 'Y' : 'N';
+        return rawValue;
+    }
+    if (typeof rawValue === 'number') {
+        if (['integer', 'double', 'number'].includes(fieldType))
+            return rawValue;
+        return String(rawValue);
+    }
+    if (Array.isArray(rawValue) || (typeof rawValue === 'object' && rawValue !== null)) {
+        return rawValue;
+    }
+    const trimmed = String(rawValue).trim();
     if (fieldType === 'boolean') {
         const lower = trimmed.toLowerCase();
         if (['y', 'yes', 'true', '1', 'да'].includes(lower))
@@ -102,7 +115,9 @@ function buildFieldsObject(fieldValues, fieldMetaMap) {
     for (const entry of fieldValues) {
         const fieldId = entry.fieldId;
         const value = entry.value;
-        if (!fieldId || value === undefined || value === '')
+        if (fieldId === undefined || fieldId === '')
+            continue;
+        if (value === undefined || value === null || value === '')
             continue;
         const meta = fieldMetaMap.get(fieldId);
         fields[fieldId] = (meta ? parseFieldValue(value, meta.type) : value);
