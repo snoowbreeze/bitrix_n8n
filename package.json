@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-bitrix24",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Custom n8n node for Bitrix24 CRM via incoming webhook",
   "license": "MIT",
   "main": "index.js",

@@ -15,6 +15,10 @@ import {
 	fetchBitrixFields,
 	formatFieldLabel,
 	getEntityTypeId,
+	MULTIFIELD_DEFS,
+	MULTIFIELD_KEY_PREFIX,
+	MULTIFIELD_RAW_KEY,
+	MULTIFIELD_TYPE,
 	type BitrixFieldMeta,
 } from './GenericFunctions';
 
@@ -186,7 +190,7 @@ export class Bitrix24 implements INodeType {
 								type: 'string',
 								default: '',
 								description:
-									'Значение поля. Для массивов и объектов — JSON. Для логических: Y/N, true/false, да/нет',
+									'Значение поля. Для логических: Y/N, true/false, да/нет. Для массивов и объектов — JSON. Для контактных полей (Телефон, E-mail, Сайт, Мессенджер) укажите значение, например +77771234567; можно задать тип через префикс (MOBILE:+7777..., HOME:mail@x.ru) и несколько значений — каждое с новой строки',
 							},
 						],
 					},
@@ -268,19 +272,38 @@ export class Bitrix24 implements INodeType {
 				const fields = await fetchBitrixFields(this, entityTypeId);
 
 				const skipReadOnly = operation === 'create' || operation === 'update';
+
+				// Есть ли у сущности множественное контактное поле (fm)?
+				const hasMultifield = fields.some((field) => field.type === MULTIFIELD_TYPE);
+
 				const filtered = fields.filter((field) => {
 					if (field.key === 'id') return false;
 					if (skipReadOnly && field.isReadOnly) return false;
+					// Скрываем «сырое» поле fm — вместо него показываем понятные
+					// виртуальные поля «Телефон», «E-mail» и т.д.
+					if (field.type === MULTIFIELD_TYPE) return false;
 					return true;
 				});
 
 				filtered.sort((a, b) => a.title.localeCompare(b.title, 'ru'));
 
-				return filtered.map((field) => ({
+				const options: INodePropertyOptions[] = filtered.map((field) => ({
 					name: formatFieldLabel(field),
 					value: field.key,
 					description: `Тип: ${field.type}${field.isRequired ? ', обязательное' : ''}`,
 				}));
+
+				// Виртуальные контактные поля показываем в начале списка.
+				if (hasMultifield) {
+					const multifieldOptions: INodePropertyOptions[] = MULTIFIELD_DEFS.map((def) => ({
+						name: `${def.title} (${def.code})`,
+						value: `${MULTIFIELD_KEY_PREFIX}${def.code}`,
+						description: `Множественное поле (${MULTIFIELD_RAW_KEY}). Можно указать несколько значений — каждое с новой строки`,
+					}));
+					return [...multifieldOptions, ...options];
+				}
+
+				return options;
 			},
 		},
 	};
